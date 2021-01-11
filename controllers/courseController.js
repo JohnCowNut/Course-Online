@@ -1,9 +1,16 @@
 const catchAsync = require("../utils/catchAsync");
 
 const APIFeatures = require("../utils/apiFeatures");
-const { Course, User, Review, Lesson, Orders } = require("../models/index");
+const {
+  Course,
+  User,
+  Review,
+  Lesson,
+  Orders
+} = require("../models/index");
 
 exports.getAllCourses = catchAsync(async (req, res, next) => {
+
   let features;
   const user = await User.findById(req.signedCookies.jwt).lean();
   if (req.query.title) {
@@ -23,10 +30,16 @@ exports.getAllCourses = catchAsync(async (req, res, next) => {
   let courses = courseWait.map(course => {
     course.ratingsAverage =
       course.reviews.reduce((prev, acc) => (prev += acc.rating), 0) /
-        course.reviews.length || 0;
+      course.reviews.length || 0;
     course.lengthReviews = course.reviews.length;
     return course;
   });
+
+  if (req.query.sort === 'rating') {
+    courses = courses.sort((a, b) => b.ratingsAverage - a.ratingsAverage)
+  }
+
+
 
   //atCourse để chứung minh nó ở router course để render nav
   res.render("course", {
@@ -38,9 +51,15 @@ exports.getAllCourses = catchAsync(async (req, res, next) => {
   });
 });
 exports.getOneCourse = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+  const {
+    id
+  } = req.params;
   const user = await User.findById(req.signedCookies.jwt).lean();
-  const course = await Course.findByIdAndUpdate(id, { $inc: { onViewed: 1 } })
+  const course = await Course.findByIdAndUpdate(id, {
+      $inc: {
+        onViewed: 1
+      }
+    })
     .populate({
       path: "instructors",
       select: "+description",
@@ -48,23 +67,26 @@ exports.getOneCourse = catchAsync(async (req, res, next) => {
     .lean();
   course.ratingsAverage =
     course.reviews.reduce((prev, acc) => (prev += acc.rating), 0) /
-      course.reviews.length || 0;
+    course.reviews.length || 0;
   course.lengthReviews = course.reviews.length;
   const isEnrolled = await Orders.findOne({
     user: req.signedCookies.jwt,
     course: id,
   }).lean();
   const lessons = await Lesson.find({
-    idCourse: id,
-  })
+      idCourse: id,
+    })
     .populate({
       path: "videos",
       select: "-created_at -updated_at -__v ",
     })
     .lean();
-  const bestSaleEqualCategory = await Course.find({category:course.category }).sort({enrolled:-1}).limit(4).lean()
-  const reviews = await Review.aggregate([
-    {
+  const bestSaleEqualCategory = await Course.find({
+    category: course.category
+  }).sort({
+    enrolled: -1
+  }).limit(4).lean()
+  const reviews = await Review.aggregate([{
       $match: {
         course: course._id,
       },
@@ -92,7 +114,7 @@ exports.getOneCourse = catchAsync(async (req, res, next) => {
       },
     },
   ]);
- 
+
   res.render("single-course", {
     user,
     reviews: reviews.length ? reviews[0].counts : [],
@@ -114,8 +136,8 @@ exports.addOneCourse = catchAsync(async (req, res, next) => {
 
 exports.getAllCourseInstructors = catchAsync(async (req, res, next) => {
   const courses = await Course.find({
-    instructors: req.user.id,
-  })
+      instructors: req.user.id,
+    })
     .select("+isCompleted")
     .lean();
   const user = await User.findById(req.user.id).lean();

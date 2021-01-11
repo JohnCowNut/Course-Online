@@ -17,34 +17,29 @@ exports.getUserProfile = catchAsync(async (req, res, next) => {
     })
     req.session.destroy();
 })
-const filterObj = (obj, ...allowedFields) => {
-    const newObj = {};
-    Object.keys(obj).forEach(el => {
-        if (!allowedFields.includes(el)) newObj[el] = obj[el];
-    });
-    return newObj;
-};
 
-exports.updateMe = catchAsync(async (req, res, next) => {
-    // 1) Create error if users POTSs password data
+exports.updateMe = async (req, res, next) => {
+    try {
+        // 1) Create error if users POTSs password data
 
-    if (req.body.password || req.body.passwordConfirm) {
+        if (req.body.password || req.body.passwordConfirm) {
+            res.redirect('/profile')
+            req.session.error = 'Do not Update password or password'
+            return;
+        }
+        // 3) Update user document address
+
+        await User.findByIdAndUpdate(req.user.id, req.body, {
+            new: true,
+            runValidators: true
+        }).lean();
+        req.session.notification = 'Update User Success fully'
         res.redirect('/profile')
-        req.session.error = 'Do not Update password or password'
-        return;
+    } catch (err) {
+        req.session.error = 'This email have user used';
+        res.redirect('/profile')
     }
-
-    // 2) Filtered out unwanted fields names that are not allowed to be update
-    const filteredBody = filterObj(req.body, 'name', 'email');
-    // 3) Update user document address
-
-    const updateUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
-        new: true,
-        runValidators: true
-    }).lean();
-
-    res.redirect('/profile')
-});
+};
 
 exports.getAddWishList = catchAsync(async (req, res, next) => {
     const course = await Course.findById(req.params.idCourse);
