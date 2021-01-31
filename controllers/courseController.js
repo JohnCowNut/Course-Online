@@ -81,21 +81,12 @@ exports.getOneCourse = catchAsync(async (req, res, next) => {
       select: "-created_at -updated_at -__v ",
     })
     .lean();
-<<<<<<< HEAD
   const bestSaleEqualCategory = await Course.find({
     category: course.category
   }).sort({
     enrolled: -1
   }).limit(4).lean()
   const reviews = await Review.aggregate([{
-=======
-  const bestSaleEqualCategory = await Course.find({ category: course.category })
-    .sort({ enrolled: -1 })
-    .limit(4)
-    .lean();
-  const reviews = await Review.aggregate([
-    {
->>>>>>> 263f7152b7a5f550282e6c8777e607a15f92d0ef
       $match: {
         course: course._id,
       },
