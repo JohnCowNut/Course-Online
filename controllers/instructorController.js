@@ -1,6 +1,6 @@
 const catchAsync = require("../utils/catchAsync");
-const { User, Course, Orders } = require("../models");
-
+const { User, Course } = require("../models");
+const cloudinary = require('cloudinary').v2;
 exports.getIndexEditCourse = catchAsync(async (req, res, next) => {
   const { idCourse } = req.params;
   const user = await User.findById(req.user.id).lean();
@@ -31,8 +31,8 @@ exports.postEditCourse = catchAsync(async (req, res, next) => {
     return;
   }
   if (req.file) {
-    // Windows .spilt("\\")
-    req.body.imageCover = req.file.path.split("\\").slice(1).join("/");
+    const cloudinaryResponse = await cloudinary.uploader.upload(`${req.file.path}`)
+    req.body.imageCover = cloudinaryResponse.url
   }
   await course.updateOne(req.body);
   res.redirect(`/instructor/course/${idCourse}`);

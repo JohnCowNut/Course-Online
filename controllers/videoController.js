@@ -1,6 +1,6 @@
 const catchAsync = require("../utils/catchAsync");
 const { User, Lesson, Course, Video } = require("../models/index");
-
+const cloudinary = require('cloudinary').v2;
 exports.getIndexAddVideo = catchAsync(async (req, res, next) => {
   const { idCourse } = req.params;
   const user = await User.findById(req.user.id).lean();
@@ -33,7 +33,6 @@ exports.getIndexAddVideo = catchAsync(async (req, res, next) => {
 
 exports.postAddVideo = catchAsync(async (req, res, next) => {
   const { idCourse } = req.params;
-
   const lessons = await Lesson.findById(req.body.idLesson);
   const course = await Course.findOne({
     _id: idCourse,
@@ -44,7 +43,11 @@ exports.postAddVideo = catchAsync(async (req, res, next) => {
     return;
   }
   req.body.isLooked = req.body.isLooked === "true" ? true : false;
-  req.body.pathUrl = req.file.path.split("\\").slice(1).join("/");
+
+  const cloudinaryResponse = await cloudinary.uploader.upload(`${req.file.path}`,{
+    resource_type:'video'
+  })
+  req.body.pathUrl = cloudinaryResponse.url
   await Video.create(req.body);
   res.redirect("/profile");
 });

@@ -1,5 +1,5 @@
 const catchAsync = require("../utils/catchAsync");
-
+const cloudinary = require('cloudinary').v2;
 const APIFeatures = require("../utils/apiFeatures");
 const {
   Course,
@@ -127,11 +127,9 @@ exports.getOneCourse = catchAsync(async (req, res, next) => {
 
 exports.addOneCourse = catchAsync(async (req, res, next) => {
   req.body.instructors = req.user.id;
-  // Windows .spilt("\\")
-  console.log(req.body.imageCover);
-  req.body.imageCover = req.file.path.split("\\").slice(1).join("/");
+  const cloudinaryResponse = await cloudinary.uploader.upload(`${req.file.path}`)
+  req.body.imageCover = cloudinaryResponse.url
   const course = await Course.create(req.body);
-
   res.redirect(`/instructor/course/${course._id}/lesson`);
 });
 
